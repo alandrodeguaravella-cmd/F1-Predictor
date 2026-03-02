@@ -692,17 +692,17 @@ function saveState(refreshExportBox=true){
 // ---------- ASSET HELPERS ----------
 function getTeamLogo(teamId){
   if (ASSET_MODE !== "local") return null;
-  return `${ASSETS.teamsPath}${teamId}.${ASSETS.teamExt}`;
+  return `images/teams/${teamId}.png`;
 }
 
 function getDriverImage(driver){
   if (ASSET_MODE !== "local") return null;
-  return `${ASSETS.driversPath}${driver.id}.${ASSETS.driverExt}`;
+  return `images/drivers/${driver.id}.png`;
 }
 
 function getFlagImage(flagCode){
   if (ASSET_MODE !== "local") return null;
-  return `${ASSETS.flagsPath}${String(flagCode).toLowerCase()}.${ASSETS.flagExt}`;
+  return `images/flags/${String(flagCode).toLowerCase()}.png`;
 }
 
 // ---------- UTIL ----------
