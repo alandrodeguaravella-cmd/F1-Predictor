@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>F1 2026 Predictor</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg"></div>
+
+  <header class="header">
+    <div class="brand">
+      <div class="brandMark">F1</div>
+      <div class="brandText">
+        <div class="title">F1 2026 Predictor</div>
+        <div class="subtitle">Drag drivers & constructors into your predicted order</div>
+      </div>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab active" data-tab="race" role="tab" aria-selected="true">Race Predictor</button>
+      <button class="tab" data-tab="seasonDrivers" role="tab">Season Drivers</button>
+      <button class="tab" data-tab="constructors" role="tab">Constructors</button>
+      <button class="tab" data-tab="manage" role="tab">Manage</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- RACE PREDICTOR -->
+    <section class="panel active" id="panel-race">
+      <div class="panelHeader">
+        <div>
+          <h2>Race Predictor</h2>
+          <p>Pick a race, then drag drivers into <b>Pole</b> and <b>Race Result</b>.</p>
+        </div>
+
+        <div class="panelControls">
+          <label class="control">
+            <span>Race</span>
+            <select id="raceSelect"></select>
+          </label>
+
+          <button class="btn secondary" id="resetRace">Reset this race</button>
+          <button class="btn" id="saveRace">Save</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <section class="card">
+          <div class="cardTitleRow">
+            <h3>Pole Position</h3>
+            <div class="pill" id="raceDatePill">—</div>
+          </div>
+          <div class="dropZone poleZone" data-zone="pole">
+            <div class="zoneHint">Drop 1 driver here</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="cardTitleRow">
+            <h3>Race Result (Top 22)</h3>
+            <div class="pill" id="raceLocationPill">—</div>
+          </div>
+          <ol class="rankList" id="raceRankList" data-zone="raceRank"></ol>
+        </section>
+      </div>
+
+      <section class="card">
+        <div class="cardTitleRow">
+          <h3>Driver Pool</h3>
+          <div class="miniActions">
+            <button class="btn tiny secondary" id="shufflePool">Shuffle</button>
+            <button class="btn tiny secondary" id="clearPoolFilters">Show all</button>
+          </div>
+        </div>
+
+        <div class="filterRow">
+          <input id="driverSearch" class="input" placeholder="Search driver or team..." />
+          <select id="teamFilter" class="input"></select>
+        </div>
+
+        <div class="pool" id="driverPool" data-zone="pool"></div>
+      </section>
+    </section>
+
+    <!-- SEASON DRIVERS -->
+    <section class="panel" id="panel-seasonDrivers">
+      <div class="panelHeader">
+        <div>
+          <h2>Season Drivers Prediction</h2>
+          <p>Drag drivers into your predicted championship order (Top 22).</p>
+        </div>
+        <div class="panelControls">
+          <button class="btn secondary" id="resetSeasonDrivers">Reset</button>
+          <button class="btn" id="saveSeasonDrivers">Save</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <section class="card">
+          <div class="cardTitleRow">
+            <h3>Ranked Drivers (Top 22)</h3>
+            <div class="pill">Drag to reorder</div>
+          </div>
+          <ol class="rankList" id="seasonDriversRankList" data-zone="seasonDriversRank"></ol>
+        </section>
+
+        <section class="card">
+          <div class="cardTitleRow">
+            <h3>Unranked Pool</h3>
+            <div class="pill">Drop here to remove</div>
+          </div>
+          <div class="pool" id="seasonDriversPool" data-zone="seasonDriversPool"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- CONSTRUCTORS -->
+    <section class="panel" id="panel-constructors">
+      <div class="panelHeader">
+        <div>
+          <h2>Constructors Prediction</h2>
+          <p>Drag constructors into your predicted order (Top 11).</p>
+        </div>
+        <div class="panelControls">
+          <button class="btn secondary" id="resetConstructors">Reset</button>
+          <button class="btn" id="saveConstructors">Save</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <section class="card">
+          <div class="cardTitleRow">
+            <h3>Ranked Constructors (Top 11)</h3>
+            <div class="pill">Drag to reorder</div>
+          </div>
+          <ol class="rankList" id="constructorsRankList" data-zone="constructorsRank"></ol>
+        </section>
+
+        <section class="card">
+          <div class="cardTitleRow">
+            <h3>Unranked Pool</h3>
+            <div class="pill">Drop here to remove</div>
+          </div>
+          <div class="pool" id="constructorsPool" data-zone="constructorsPool"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- MANAGE -->
+    <section class="panel" id="panel-manage">
+      <div class="panelHeader">
+        <div>
+          <h2>Manage</h2>
+          <p>Export, import, or clear your predictions (stored locally in your browser).</p>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <section class="card">
+          <h3>Export</h3>
+          <p class="muted">Copy your saved predictions JSON.</p>
+          <textarea id="exportBox" class="textarea" readonly></textarea>
+          <div class="row">
+            <button class="btn" id="refreshExport">Refresh export</button>
+            <button class="btn secondary" id="copyExport">Copy</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>Import</h3>
+          <p class="muted">Paste JSON then import.</p>
+          <textarea id="importBox" class="textarea" placeholder="Paste exported JSON here..."></textarea>
+          <div class="row">
+            <button class="btn" id="importBtn">Import</button>
+            <button class="btn danger" id="clearAll">Clear everything</button>
+          </div>
+          <div class="toast" id="toast" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <section class="card">
+        <h3>How to add real images (optional)</h3>
+        <p class="muted">
+          This project uses placeholders by default. If you want real team logos / driver faces / race flags:
+        </p>
+        <ol class="muted">
+          <li>Create an <code>assets/</code> folder next to <code>index.html</code>.</li>
+          <li>Add files like <code>assets/teams/ferrari.png</code>, <code>assets/drivers/verstappen.jpg</code>, <code>assets/flags/aus.png</code>.</li>
+          <li>Then update paths in <code>app.js</code> (search: <code>ASSET_MODE</code>).</li>
+        </ol>
+        <p class="muted">
+          (Keeping it placeholder-only avoids copyright/usage headaches, but the hooks are ready.)
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="muted">F1 2026 Predictor • Drag & drop • Autosaves locally</div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
