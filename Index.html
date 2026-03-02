@@ -8,10 +8,13 @@
 </head>
 <body>
   <div class="bg"></div>
+  <div class="grain"></div>
 
   <header class="header">
     <div class="brand">
-      <div class="brandMark">F1</div>
+      <div class="brandMark">
+        <span>F1</span>
+      </div>
       <div class="brandText">
         <div class="title">F1 2026 Predictor</div>
         <div class="subtitle">Drag drivers & constructors into your predicted order</div>
@@ -60,7 +63,10 @@
         <section class="card">
           <div class="cardTitleRow">
             <h3>Race Result (Top 22)</h3>
-            <div class="pill" id="raceLocationPill">—</div>
+            <div class="pill pillWithIcon" id="raceLocationPill">
+              <span class="pillIcon" id="raceFlagIcon">🏁</span>
+              <span id="raceLocationText">—</span>
+            </div>
           </div>
           <ol class="rankList" id="raceRankList" data-zone="raceRank"></ol>
         </section>
@@ -181,18 +187,16 @@
       </div>
 
       <section class="card">
-        <h3>How to add real images (optional)</h3>
+        <h3>Images (code-based)</h3>
         <p class="muted">
-          This project uses placeholders by default. If you want real team logos / driver faces / race flags:
+          Turn on <code>ASSET_MODE = "local"</code> in <code>app.js</code> and add images like:
         </p>
-        <ol class="muted">
-          <li>Create an <code>assets/</code> folder next to <code>index.html</code>.</li>
-          <li>Add files like <code>assets/teams/ferrari.png</code>, <code>assets/drivers/verstappen.jpg</code>, <code>assets/flags/aus.png</code>.</li>
-          <li>Then update paths in <code>app.js</code> (search: <code>ASSET_MODE</code>).</li>
-        </ol>
-        <p class="muted">
-          (Keeping it placeholder-only avoids copyright/usage headaches, but the hooks are ready.)
-        </p>
+        <ul class="muted">
+          <li><code>assets/drivers/leclerc.png</code></li>
+          <li><code>assets/teams/ferrari.png</code></li>
+          <li><code>assets/flags/aus.png</code> (optional)</li>
+        </ul>
+        <p class="muted">If an image is missing, the app falls back to initials automatically.</p>
       </section>
     </section>
   </main>
@@ -201,7 +205,6 @@
     <div class="muted">F1 2026 Predictor • Drag & drop • Autosaves locally</div>
   </footer>
 
-<link rel="stylesheet" href="styles.css" />
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

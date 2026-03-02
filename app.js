@@ -10,10 +10,19 @@
 const LS_KEY = "f1_2026_predictor_v1";
 
 /** ASSET MODE
- *  Keep "placeholder" to avoid needing external images.
- *  If you add your own images in /assets, set to "local".
+ * "placeholder" = initials
+ * "local" = loads from /assets (code-based images)
  */
-const ASSET_MODE = "placeholder"; // "placeholder" | "local"
+const ASSET_MODE = "local"; // "placeholder" | "local"
+
+const ASSETS = {
+  driversPath: "assets/drivers/",
+  teamsPath: "assets/teams/",
+  flagsPath: "assets/flags/",
+  driverExt: "png",
+  teamExt: "png",
+  flagExt: "png"
+};
 
 // ---------- DATA ----------
 const TEAMS = [
@@ -69,19 +78,10 @@ const RACES = [
 // ---------- STATE ----------
 const defaultState = () => ({
   activeRaceId: RACES[0].id,
-  racePredictions: {
-    // [raceId]: { pole: driverId|null, order: [driverId...] length <= 22 }
-  },
-  seasonDrivers: {
-    order: [], // ranked
-  },
-  constructors: {
-    order: [], // teamIds ranked
-  },
-  ui: {
-    racePoolSearch: "",
-    racePoolTeam: "all"
-  }
+  racePredictions: {},
+  seasonDrivers: { order: [] },
+  constructors: { order: [] },
+  ui: { racePoolSearch: "", racePoolTeam: "all" }
 });
 
 let state = loadState();
@@ -97,7 +97,9 @@ const panels = {
 
 const raceSelect = document.getElementById("raceSelect");
 const raceDatePill = document.getElementById("raceDatePill");
-const raceLocationPill = document.getElementById("raceLocationPill");
+const raceLocationText = document.getElementById("raceLocationText");
+const raceFlagIcon = document.getElementById("raceFlagIcon");
+
 const poleZone = document.querySelector(".poleZone");
 const raceRankList = document.getElementById("raceRankList");
 const driverPool = document.getElementById("driverPool");
@@ -145,8 +147,6 @@ teamFilter.addEventListener("change", () => {
   renderRace();
 });
 shufflePoolBtn.addEventListener("click", () => {
-  // Shuffle only the visible pool order (we render from DRIVERS; so we shuffle a derived list by caching)
-  // simplest: randomize DRIVERS order clone in render
   state.ui.__shuffleSeed = Math.random().toString(36).slice(2);
   renderRace();
 });
@@ -182,13 +182,11 @@ raceSelect.addEventListener("change", () => {
 init();
 
 function init(){
-  // Build race select
   raceSelect.innerHTML = RACES.map(r =>
     `<option value="${r.id}">${r.name} • ${r.date}</option>`
   ).join("");
   raceSelect.value = state.activeRaceId;
 
-  // Build team filter
   teamFilter.innerHTML = [
     `<option value="all">All teams</option>`,
     ...TEAMS.map(t => `<option value="${t.id}">${t.name}</option>`)
@@ -196,16 +194,10 @@ function init(){
   teamFilter.value = state.ui.racePoolTeam ?? "all";
   driverSearch.value = state.ui.racePoolSearch ?? "";
 
-  // Ensure structures exist
   if (!state.racePredictions) state.racePredictions = {};
   if (!state.seasonDrivers) state.seasonDrivers = { order: [] };
   if (!state.constructors) state.constructors = { order: [] };
 
-  // If empty, start with “unranked everything”
-  if (!Array.isArray(state.seasonDrivers.order)) state.seasonDrivers.order = [];
-  if (!Array.isArray(state.constructors.order)) state.constructors.order = [];
-
-  // DnD listeners for top-level zones
   makeDropZone(poleZone, handleDropPole);
   makeDropZone(driverPool, handleDropToPool);
   makeDropZone(seasonDriversPool, handleDropToSeasonDriversPool);
@@ -214,7 +206,6 @@ function init(){
   renderAll();
 }
 
-// ---------- RENDER ----------
 function renderAll(){
   renderRace();
   renderSeasonDrivers();
@@ -224,15 +215,30 @@ function renderAll(){
 function renderRace(){
   const race = RACES.find(r => r.id === state.activeRaceId) || RACES[0];
   raceDatePill.textContent = race.date;
-  raceLocationPill.textContent = `${race.location} • ${race.flag}`;
 
-  // Ensure race object exists
+  // pill text + optional flag image
+  if (raceLocationText) raceLocationText.textContent = `${race.location} • ${race.flag}`;
+  if (raceFlagIcon){
+    raceFlagIcon.innerHTML = "";
+    const src = getFlagImage(race.flag);
+    if (!src){
+      raceFlagIcon.textContent = "🏁";
+    } else {
+      const img = document.createElement("img");
+      img.src = src; // assets/flags/aus.png
+      img.alt = race.flag;
+      img.addEventListener("error", () => {
+        raceFlagIcon.textContent = "🏁";
+      });
+      raceFlagIcon.appendChild(img);
+    }
+  }
+
   if (!state.racePredictions[race.id]){
     state.racePredictions[race.id] = { pole: null, order: [] };
   }
   const rp = state.racePredictions[race.id];
 
-  // Pole zone
   poleZone.innerHTML = "";
   if (rp.pole){
     const d = DRIVERS.find(x => x.id === rp.pole);
@@ -244,7 +250,6 @@ function renderRace(){
     poleZone.appendChild(hint);
   }
 
-  // Race rank list (22 slots)
   raceRankList.innerHTML = "";
   for (let i=1; i<=22; i++){
     const slot = document.createElement("li");
@@ -260,7 +265,6 @@ function renderRace(){
     target.dataset.zone = "raceRank";
     target.dataset.pos = String(i);
 
-    // Fill with driver if exists
     const driverId = rp.order[i-1] ?? null;
     if (driverId){
       const d = DRIVERS.find(x => x.id === driverId);
@@ -277,11 +281,9 @@ function renderRace(){
     raceRankList.appendChild(slot);
   }
 
-  // Driver pool (not already placed in pole or race order)
   const used = new Set([rp.pole, ...rp.order].filter(Boolean));
   let poolDrivers = DRIVERS.filter(d => !used.has(d.id));
 
-  // Filter/search
   const q = (state.ui.racePoolSearch || "").toLowerCase().trim();
   const tf = state.ui.racePoolTeam || "all";
   if (tf !== "all") poolDrivers = poolDrivers.filter(d => d.teamId === tf);
@@ -289,7 +291,6 @@ function renderRace(){
     d.name.toLowerCase().includes(q) || d.teamName.toLowerCase().includes(q)
   );
 
-  // optional shuffle for fun
   if (state.ui.__shuffleSeed){
     poolDrivers = shuffle(poolDrivers, state.ui.__shuffleSeed);
   }
@@ -299,7 +300,6 @@ function renderRace(){
 }
 
 function renderSeasonDrivers(){
-  // 22 slots
   seasonDriversRankList.innerHTML = "";
   const ranked = state.seasonDrivers.order || [];
 
@@ -333,7 +333,6 @@ function renderSeasonDrivers(){
     seasonDriversRankList.appendChild(slot);
   }
 
-  // Pool = drivers not ranked
   const used = new Set(ranked.filter(Boolean));
   const pool = DRIVERS.filter(d => !used.has(d.id));
 
@@ -375,7 +374,6 @@ function renderConstructors(){
     constructorsRankList.appendChild(slot);
   }
 
-  // Pool
   const used = new Set(ranked.filter(Boolean));
   const pool = TEAMS.filter(t => !used.has(t.id));
 
@@ -462,7 +460,6 @@ function makeTeamCard(team, opts={}){
 }
 
 function makeImageOrInitial(src, fallbackText){
-  // If src is null => placeholder initial block
   if (!src){
     const span = document.createElement("span");
     span.textContent = fallbackText;
@@ -506,10 +503,7 @@ function handleDropPole(payload){
   const raceId = state.activeRaceId;
   const rp = state.racePredictions[raceId] || { pole:null, order:[] };
 
-  // If driver is already in race order, remove from that list
   rp.order = (rp.order || []).filter(id => id !== payload.id);
-
-  // Replace pole
   rp.pole = payload.id;
 
   state.racePredictions[raceId] = rp;
@@ -527,14 +521,10 @@ function handleDropRaceRankSlot(payload, slotEl){
   const rp = state.racePredictions[raceId] || { pole:null, order:[] };
   rp.order = rp.order || [];
 
-  // Remove driver from pole and elsewhere in order (avoid duplicates)
   if (rp.pole === payload.id) rp.pole = null;
   rp.order = rp.order.filter(id => id !== payload.id);
-
-  // Place at position (1-based)
   rp.order[pos-1] = payload.id;
 
-  // Compact? (keep sparse allowed; we’ll keep as-is)
   state.racePredictions[raceId] = rp;
   saveState(false);
   renderRace();
@@ -546,7 +536,6 @@ function handleDropToPool(payload){
   const raceId = state.activeRaceId;
   const rp = state.racePredictions[raceId] || { pole:null, order:[] };
 
-  // Remove from pole/order
   if (rp.pole === payload.id) rp.pole = null;
   rp.order = (rp.order || []).map(id => id === payload.id ? null : id).filter(x => x !== undefined);
 
@@ -563,11 +552,7 @@ function handleDropSeasonDriversRankSlot(payload, slotEl){
   if (!pos || pos < 1 || pos > 22) return;
 
   const ranked = state.seasonDrivers.order || [];
-
-  // Remove duplicates
   const cleaned = ranked.filter(id => id !== payload.id);
-
-  // Place
   cleaned[pos-1] = payload.id;
 
   state.seasonDrivers.order = cleaned;
@@ -593,10 +578,9 @@ function handleDropConstructorsRankSlot(payload, slotEl){
 
   const ranked = state.constructors.order || [];
   const cleaned = ranked.filter(id => id !== payload.id);
-
   cleaned[pos-1] = payload.id;
-  state.constructors.order = cleaned;
 
+  state.constructors.order = cleaned;
   saveState(false);
   renderConstructors();
 }
@@ -635,7 +619,6 @@ function resetConstructors(){
 function clearAll(){
   state = defaultState();
   saveState(true);
-  // refresh UI values
   raceSelect.value = state.activeRaceId;
   driverSearch.value = "";
   teamFilter.value = "all";
@@ -664,7 +647,6 @@ function importFromBox(){
     toast("Invalid JSON ❌");
     return;
   }
-  // minimal validation
   if (!data.activeRaceId || !data.racePredictions){
     toast("JSON does not look like this app’s export ❌");
     return;
@@ -672,7 +654,6 @@ function importFromBox(){
   state = data;
   saveState(true);
 
-  // sync UI
   raceSelect.value = state.activeRaceId;
   driverSearch.value = state.ui?.racePoolSearch || "";
   teamFilter.value = state.ui?.racePoolTeam || "all";
@@ -704,23 +685,24 @@ function loadState(){
 function saveState(refreshExportBox=true){
   try{
     localStorage.setItem(LS_KEY, JSON.stringify(state));
-  }catch{
-    // ignore
-  }
+  }catch{}
   if (refreshExportBox) refreshExport();
 }
 
 // ---------- ASSET HELPERS ----------
 function getTeamLogo(teamId){
   if (ASSET_MODE !== "local") return null;
-  // Example: assets/teams/ferrari.png
-  return `assets/teams/${teamId}.png`;
+  return `${ASSETS.teamsPath}${teamId}.${ASSETS.teamExt}`;
 }
 
 function getDriverImage(driver){
   if (ASSET_MODE !== "local") return null;
-  // Example: assets/drivers/verstappen.jpg
-  return `assets/drivers/${driver.id}.jpg`;
+  return `${ASSETS.driversPath}${driver.id}.${ASSETS.driverExt}`;
+}
+
+function getFlagImage(flagCode){
+  if (ASSET_MODE !== "local") return null;
+  return `${ASSETS.flagsPath}${String(flagCode).toLowerCase()}.${ASSETS.flagExt}`;
 }
 
 // ---------- UTIL ----------
@@ -756,7 +738,6 @@ function safeParse(s){
   try { return JSON.parse(s); } catch { return null; }
 }
 
-// deterministic-ish shuffle from seed string
 function shuffle(arr, seedStr){
   let seed = 0;
   for (let i=0;i<seedStr.length;i++) seed = (seed*31 + seedStr.charCodeAt(i)) >>> 0;
