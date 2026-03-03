@@ -11,18 +11,9 @@ const LS_KEY = "f1_2026_predictor_v1";
 
 /** ASSET MODE
  * "placeholder" = initials
- * "local" = loads from /assets (code-based images)
+ * "local" = loads from /images (code-based images)
  */
 const ASSET_MODE = "local"; // "placeholder" | "local"
-
-const ASSETS = {
-  driversPath: "assets/drivers/",
-  teamsPath: "assets/teams/",
-  flagsPath: "assets/flags/",
-  driverExt: "png",
-  teamExt: "png",
-  flagExt: "png"
-};
 
 // ---------- DATA ----------
 const TEAMS = [
@@ -212,11 +203,11 @@ function renderAll(){
   renderConstructors();
 }
 
+// ---------- RENDER ----------
 function renderRace(){
   const race = RACES.find(r => r.id === state.activeRaceId) || RACES[0];
   raceDatePill.textContent = race.date;
 
-  // pill text + optional flag image
   if (raceLocationText) raceLocationText.textContent = `${race.location} • ${race.flag}`;
   if (raceFlagIcon){
     raceFlagIcon.innerHTML = "";
@@ -225,11 +216,9 @@ function renderRace(){
       raceFlagIcon.textContent = "🏁";
     } else {
       const img = document.createElement("img");
-      img.src = src; // assets/flags/aus.png
+      img.src = src;
       img.alt = race.flag;
-      img.addEventListener("error", () => {
-        raceFlagIcon.textContent = "🏁";
-      });
+      img.addEventListener("error", () => { raceFlagIcon.textContent = "🏁"; });
       raceFlagIcon.appendChild(img);
     }
   }
@@ -239,6 +228,7 @@ function renderRace(){
   }
   const rp = state.racePredictions[race.id];
 
+  // Pole
   poleZone.innerHTML = "";
   if (rp.pole){
     const d = DRIVERS.find(x => x.id === rp.pole);
@@ -250,6 +240,7 @@ function renderRace(){
     poleZone.appendChild(hint);
   }
 
+  // Race ranks
   raceRankList.innerHTML = "";
   for (let i=1; i<=22; i++){
     const slot = document.createElement("li");
@@ -281,7 +272,8 @@ function renderRace(){
     raceRankList.appendChild(slot);
   }
 
-  const used = new Set([rp.pole, ...rp.order].filter(Boolean));
+  // Pool (unused)
+  const used = new Set([rp.pole, ...(rp.order || [])].filter(Boolean));
   let poolDrivers = DRIVERS.filter(d => !used.has(d.id));
 
   const q = (state.ui.racePoolSearch || "").toLowerCase().trim();
@@ -290,7 +282,6 @@ function renderRace(){
   if (q) poolDrivers = poolDrivers.filter(d =>
     d.name.toLowerCase().includes(q) || d.teamName.toLowerCase().includes(q)
   );
-
   if (state.ui.__shuffleSeed){
     poolDrivers = shuffle(poolDrivers, state.ui.__shuffleSeed);
   }
@@ -335,7 +326,6 @@ function renderSeasonDrivers(){
 
   const used = new Set(ranked.filter(Boolean));
   const pool = DRIVERS.filter(d => !used.has(d.id));
-
   seasonDriversPool.innerHTML = "";
   pool.forEach(d => seasonDriversPool.appendChild(makeDriverCard(d, { context:"seasonDriversPool" })));
 }
@@ -376,7 +366,6 @@ function renderConstructors(){
 
   const used = new Set(ranked.filter(Boolean));
   const pool = TEAMS.filter(t => !used.has(t.id));
-
   constructorsPool.innerHTML = "";
   pool.forEach(t => constructorsPool.appendChild(makeTeamCard(t, { context:"constructorsPool" })));
 }
@@ -412,11 +401,12 @@ function makeDriverCard(driver, opts={}){
   el.appendChild(badge);
 
   el.addEventListener("dragstart", (e) => {
-    e.dataTransfer.setData("application/json", JSON.stringify({
-      type:"driver",
-      id: driver.id,
-      from: el.dataset.from
-    }));
+    const data = JSON.stringify({ type:"driver", id: driver.id, from: el.dataset.from });
+
+    // ✅ Opera GX + Chrome compatibility
+    e.dataTransfer.setData("application/json", data);
+    e.dataTransfer.setData("text/plain", data);
+
     e.dataTransfer.effectAllowed = "move";
   });
 
@@ -448,11 +438,12 @@ function makeTeamCard(team, opts={}){
   el.appendChild(badge);
 
   el.addEventListener("dragstart", (e) => {
-    e.dataTransfer.setData("application/json", JSON.stringify({
-      type:"team",
-      id: team.id,
-      from: el.dataset.from
-    }));
+    const data = JSON.stringify({ type:"team", id: team.id, from: el.dataset.from });
+
+    // ✅ Compatibility
+    e.dataTransfer.setData("application/json", data);
+    e.dataTransfer.setData("text/plain", data);
+
     e.dataTransfer.effectAllowed = "move";
   });
 
@@ -486,12 +477,21 @@ function makeDropZone(el, onDrop){
     el.classList.add("dragOver");
     e.dataTransfer.dropEffect = "move";
   });
+
   el.addEventListener("dragleave", () => el.classList.remove("dragOver"));
+
   el.addEventListener("drop", (e) => {
     e.preventDefault();
     el.classList.remove("dragOver");
-    const payload = safeParse(e.dataTransfer.getData("application/json"));
+
+    // ✅ read both types (Opera GX fix)
+    const raw =
+      e.dataTransfer.getData("application/json") ||
+      e.dataTransfer.getData("text/plain");
+
+    const payload = safeParse(raw);
     if (!payload) return;
+
     onDrop(payload, el);
   });
 }
@@ -503,7 +503,7 @@ function handleDropPole(payload){
   const raceId = state.activeRaceId;
   const rp = state.racePredictions[raceId] || { pole:null, order:[] };
 
-  rp.order = (rp.order || []).filter(id => id !== payload.id);
+  rp.order = (rp.order || []).map(id => (id === payload.id ? null : id));
   rp.pole = payload.id;
 
   state.racePredictions[raceId] = rp;
@@ -524,29 +524,17 @@ function handleDropRaceRankSlot(payload, slotEl){
   const targetIdx = pos - 1;
   const draggedId = payload.id;
 
-  // Who is currently in the target slot?
   const replacedId = rp.order[targetIdx] ?? null;
 
-  // Remove dragged from pole/order
   if (rp.pole === draggedId) rp.pole = null;
 
-  // If dragging from within raceRank, find its old index
   const oldIdx = rp.order.findIndex(id => id === draggedId);
-
-  // Remove dragged from its old position
   if (oldIdx !== -1) rp.order[oldIdx] = null;
 
-  // Place dragged into target
   rp.order[targetIdx] = draggedId;
 
-  // If we replaced someone, put them back where dragged came from (swap),
-  // otherwise just remove them (they go back to pool automatically because not used).
   if (replacedId && replacedId !== draggedId){
-    if (oldIdx !== -1){
-      rp.order[oldIdx] = replacedId; // swap
-    } else {
-      // dragged came from pool/pole → replaced goes back to pool (do nothing)
-    }
+    if (oldIdx !== -1) rp.order[oldIdx] = replacedId; // swap
   }
 
   state.racePredictions[raceId] = rp;
@@ -561,8 +549,6 @@ function handleDropToPool(payload){
   const rp = state.racePredictions[raceId] || { pole:null, order:[] };
 
   if (rp.pole === payload.id) rp.pole = null;
-
-  // Remove driver from order cleanly
   rp.order = (rp.order || []).map(id => (id === payload.id ? null : id));
 
   state.racePredictions[raceId] = rp;
@@ -588,9 +574,7 @@ function handleDropSeasonDriversRankSlot(payload, slotEl){
   ranked[targetIdx] = draggedId;
 
   if (replacedId && replacedId !== draggedId){
-    if (oldIdx !== -1){
-      ranked[oldIdx] = replacedId; // swap
-    }
+    if (oldIdx !== -1) ranked[oldIdx] = replacedId; // swap
   }
 
   state.seasonDrivers.order = ranked;
@@ -624,9 +608,7 @@ function handleDropConstructorsRankSlot(payload, slotEl){
   ranked[targetIdx] = draggedId;
 
   if (replacedId && replacedId !== draggedId){
-    if (oldIdx !== -1){
-      ranked[oldIdx] = replacedId; // swap
-    }
+    if (oldIdx !== -1) ranked[oldIdx] = replacedId; // swap
   }
 
   state.constructors.order = ranked;
@@ -692,15 +674,13 @@ async function copyExport(){
 
 function importFromBox(){
   const data = safeParse(importBox.value);
-  if (!data){
-    toast("Invalid JSON ❌");
-    return;
-  }
+  if (!data){ toast("Invalid JSON ❌"); return; }
   if (!data.activeRaceId || !data.racePredictions){
     toast("JSON does not look like this app’s export ❌");
     return;
   }
-  state = data;
+
+  state = { ...defaultState(), ...data };
   saveState(true);
 
   raceSelect.value = state.activeRaceId;
@@ -732,9 +712,7 @@ function loadState(){
 }
 
 function saveState(refreshExportBox=true){
-  try{
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
-  }catch{}
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch{}
   if (refreshExportBox) refreshExport();
 }
 

@@ -30,6 +30,7 @@
   </header>
 
   <main class="container">
+
     <!-- RACE PREDICTOR -->
     <section class="panel active" id="panel-race">
       <div class="panelHeader">
@@ -49,45 +50,54 @@
         </div>
       </div>
 
-      <div class="grid2">
-        <section class="card">
-          <div class="cardTitleRow">
-            <h3>Pole Position</h3>
-            <div class="pill" id="raceDatePill">—</div>
-          </div>
-          <div class="dropZone poleZone" data-zone="pole">
-            <div class="zoneHint">Drop 1 driver here</div>
-          </div>
-        </section>
+      <!-- ✅ NEW: side-by-side layout -->
+      <div class="raceLayout">
 
-        <section class="card">
-          <div class="cardTitleRow">
-            <h3>Race Result (Top 22)</h3>
-            <div class="pill pillWithIcon" id="raceLocationPill">
-              <span class="pillIcon" id="raceFlagIcon">🏁</span>
-              <span id="raceLocationText">—</span>
+        <div class="raceLeft">
+          <div class="grid2">
+            <section class="card">
+              <div class="cardTitleRow">
+                <h3>Pole Position</h3>
+                <div class="pill" id="raceDatePill">—</div>
+              </div>
+              <div class="dropZone poleZone" data-zone="pole">
+                <div class="zoneHint">Drop 1 driver here</div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="cardTitleRow">
+                <h3>Race Result (Top 22)</h3>
+                <div class="pill pillWithIcon" id="raceLocationPill">
+                  <span class="pillIcon" id="raceFlagIcon">🏁</span>
+                  <span id="raceLocationText">—</span>
+                </div>
+              </div>
+              <ol class="rankList" id="raceRankList" data-zone="raceRank"></ol>
+            </section>
+          </div>
+        </div>
+
+        <div class="raceRight">
+          <section class="card stickyCard">
+            <div class="cardTitleRow">
+              <h3>Driver Pool</h3>
+              <div class="miniActions">
+                <button class="btn tiny secondary" id="shufflePool">Shuffle</button>
+                <button class="btn tiny secondary" id="clearPoolFilters">Show all</button>
+              </div>
             </div>
-          </div>
-          <ol class="rankList" id="raceRankList" data-zone="raceRank"></ol>
-        </section>
+
+            <div class="filterRow">
+              <input id="driverSearch" class="input" placeholder="Search driver or team..." />
+              <select id="teamFilter" class="input"></select>
+            </div>
+
+            <div class="pool poolScroll" id="driverPool" data-zone="pool"></div>
+          </section>
+        </div>
+
       </div>
-
-      <section class="card">
-        <div class="cardTitleRow">
-          <h3>Driver Pool</h3>
-          <div class="miniActions">
-            <button class="btn tiny secondary" id="shufflePool">Shuffle</button>
-            <button class="btn tiny secondary" id="clearPoolFilters">Show all</button>
-          </div>
-        </div>
-
-        <div class="filterRow">
-          <input id="driverSearch" class="input" placeholder="Search driver or team..." />
-          <select id="teamFilter" class="input"></select>
-        </div>
-
-        <div class="pool" id="driverPool" data-zone="pool"></div>
-      </section>
     </section>
 
     <!-- SEASON DRIVERS -->
@@ -107,7 +117,7 @@
         <section class="card">
           <div class="cardTitleRow">
             <h3>Ranked Drivers (Top 22)</h3>
-            <div class="pill">Drag to reorder</div>
+            <div class="pill">Drop to swap</div>
           </div>
           <ol class="rankList" id="seasonDriversRankList" data-zone="seasonDriversRank"></ol>
         </section>
@@ -139,7 +149,7 @@
         <section class="card">
           <div class="cardTitleRow">
             <h3>Ranked Constructors (Top 11)</h3>
-            <div class="pill">Drag to reorder</div>
+            <div class="pill">Drop to swap</div>
           </div>
           <ol class="rankList" id="constructorsRankList" data-zone="constructorsRank"></ol>
         </section>
@@ -188,17 +198,16 @@
 
       <section class="card">
         <h3>Images (code-based)</h3>
-        <p class="muted">
-          Turn on <code>ASSET_MODE = "local"</code> in <code>app.js</code> and add images like:
-        </p>
+        <p class="muted">Your project uses <code>/images/</code> (not <code>/assets/</code>). Add images like:</p>
         <ul class="muted">
-          <li><code>assets/drivers/leclerc.png</code></li>
-          <li><code>assets/teams/ferrari.png</code></li>
-          <li><code>assets/flags/aus.png</code> (optional)</li>
+          <li><code>images/drivers/leclerc.png</code></li>
+          <li><code>images/teams/ferrari.png</code></li>
+          <li><code>images/flags/aus.png</code> (optional)</li>
         </ul>
         <p class="muted">If an image is missing, the app falls back to initials automatically.</p>
       </section>
     </section>
+
   </main>
 
   <footer class="footer">
