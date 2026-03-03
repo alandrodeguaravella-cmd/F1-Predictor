@@ -282,6 +282,15 @@ code{background: rgba(255,255,255,.06); padding:2px 6px; border-radius:8px; bord
   color: rgba(234,240,255,.40);
   font-size:13px;
 }
+.dropTarget.locked{
+  opacity: .55;
+  pointer-events: none;
+}
+
+.dropTarget.locked.empty::before{
+  content:"Pick pole first";
+  color: rgba(234,240,255,.45);
+}
 
 .driverCard, .teamCard{
   display:flex;

@@ -256,6 +256,13 @@ function renderRace(){
     target.dataset.zone = "raceRank";
     target.dataset.pos = String(i);
 
+    // Lock race result until pole is selected
+    if (!rp.pole) {
+    target.classList.add("locked");
+    } else {
+   makeDropZone(target, handleDropRaceRankSlot);
+   }
+
     const driverId = rp.order[i-1] ?? null;
     if (driverId){
       const d = DRIVERS.find(x => x.id === driverId);
@@ -265,7 +272,6 @@ function renderRace(){
       }
     }
 
-    makeDropZone(target, handleDropRaceRankSlot);
 
     slot.appendChild(idx);
     slot.appendChild(target);
@@ -273,8 +279,16 @@ function renderRace(){
   }
 
   // Pool (unused)
-  const used = new Set([rp.pole, ...(rp.order || [])].filter(Boolean));
-  let poolDrivers = DRIVERS.filter(d => !used.has(d.id));
+// --- POLE FIRST FLOW ---
+// Before pole is chosen: show ALL drivers in pool (for picking pole).
+// After pole is chosen: remove ONLY drivers already placed in race order (NOT pole).
+let poolDrivers;
+if (!rp.pole) {
+  poolDrivers = DRIVERS.slice();
+} else {
+  const usedInOrder = new Set((rp.order || []).filter(Boolean));
+  poolDrivers = DRIVERS.filter(d => !usedInOrder.has(d.id));
+}
 
   const q = (state.ui.racePoolSearch || "").toLowerCase().trim();
   const tf = state.ui.racePoolTeam || "all";
@@ -503,7 +517,7 @@ function handleDropPole(payload){
   const raceId = state.activeRaceId;
   const rp = state.racePredictions[raceId] || { pole:null, order:[] };
 
-  rp.order = (rp.order || []).map(id => (id === payload.id ? null : id));
+  // Pole selection should NOT remove from pool/order
   rp.pole = payload.id;
 
   state.racePredictions[raceId] = rp;
@@ -548,7 +562,7 @@ function handleDropToPool(payload){
   const raceId = state.activeRaceId;
   const rp = state.racePredictions[raceId] || { pole:null, order:[] };
 
-  if (rp.pole === payload.id) rp.pole = null;
+  // Do NOT clear pole here
   rp.order = (rp.order || []).map(id => (id === payload.id ? null : id));
 
   state.racePredictions[raceId] = rp;
