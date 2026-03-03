@@ -368,3 +368,35 @@ code{background: rgba(255,255,255,.06); padding:2px 6px; border-radius:8px; bord
   padding:14px 18px;
   text-align:center;
 }
+/* Fix washed-out <select> dropdown list on Windows/Chrome */
+:root{
+  color-scheme: dark; /* tells the browser to render native controls in dark mode */
+}
+
+select, option, optgroup{
+  color: var(--text);
+  background-color: #0b1020;
+}
+
+select{
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Keep selected option readable */
+select option:checked{
+  background-color: rgba(255,30,30,.35);
+  color: var(--text);
+}
+
+/* Hover in dropdown (supported in some browsers) */
+select option:hover{
+  background-color: rgba(34,211,238,.22);
+  color: var(--text);
+}
+
+/* Optional: nicer scrollbar inside dropdown (won’t affect all browsers) */
+select{
+  scrollbar-color: rgba(255,255,255,.35) rgba(255,255,255,.08);
+}
