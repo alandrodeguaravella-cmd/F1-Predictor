@@ -521,9 +521,33 @@ function handleDropRaceRankSlot(payload, slotEl){
   const rp = state.racePredictions[raceId] || { pole:null, order:[] };
   rp.order = rp.order || [];
 
-  if (rp.pole === payload.id) rp.pole = null;
-  rp.order = rp.order.filter(id => id !== payload.id);
-  rp.order[pos-1] = payload.id;
+  const targetIdx = pos - 1;
+  const draggedId = payload.id;
+
+  // Who is currently in the target slot?
+  const replacedId = rp.order[targetIdx] ?? null;
+
+  // Remove dragged from pole/order
+  if (rp.pole === draggedId) rp.pole = null;
+
+  // If dragging from within raceRank, find its old index
+  const oldIdx = rp.order.findIndex(id => id === draggedId);
+
+  // Remove dragged from its old position
+  if (oldIdx !== -1) rp.order[oldIdx] = null;
+
+  // Place dragged into target
+  rp.order[targetIdx] = draggedId;
+
+  // If we replaced someone, put them back where dragged came from (swap),
+  // otherwise just remove them (they go back to pool automatically because not used).
+  if (replacedId && replacedId !== draggedId){
+    if (oldIdx !== -1){
+      rp.order[oldIdx] = replacedId; // swap
+    } else {
+      // dragged came from pool/pole → replaced goes back to pool (do nothing)
+    }
+  }
 
   state.racePredictions[raceId] = rp;
   saveState(false);
@@ -537,7 +561,9 @@ function handleDropToPool(payload){
   const rp = state.racePredictions[raceId] || { pole:null, order:[] };
 
   if (rp.pole === payload.id) rp.pole = null;
-  rp.order = (rp.order || []).map(id => id === payload.id ? null : id).filter(x => x !== undefined);
+
+  // Remove driver from order cleanly
+  rp.order = (rp.order || []).map(id => (id === payload.id ? null : id));
 
   state.racePredictions[raceId] = rp;
   saveState(false);
@@ -552,10 +578,22 @@ function handleDropSeasonDriversRankSlot(payload, slotEl){
   if (!pos || pos < 1 || pos > 22) return;
 
   const ranked = state.seasonDrivers.order || [];
-  const cleaned = ranked.filter(id => id !== payload.id);
-  cleaned[pos-1] = payload.id;
+  const targetIdx = pos - 1;
+  const draggedId = payload.id;
 
-  state.seasonDrivers.order = cleaned;
+  const replacedId = ranked[targetIdx] ?? null;
+  const oldIdx = ranked.findIndex(id => id === draggedId);
+
+  if (oldIdx !== -1) ranked[oldIdx] = null;
+  ranked[targetIdx] = draggedId;
+
+  if (replacedId && replacedId !== draggedId){
+    if (oldIdx !== -1){
+      ranked[oldIdx] = replacedId; // swap
+    }
+  }
+
+  state.seasonDrivers.order = ranked;
   saveState(false);
   renderSeasonDrivers();
 }
@@ -563,8 +601,7 @@ function handleDropSeasonDriversRankSlot(payload, slotEl){
 function handleDropToSeasonDriversPool(payload){
   if (payload.type !== "driver") return;
 
-  const ranked = state.seasonDrivers.order || [];
-  state.seasonDrivers.order = ranked.map(id => id === payload.id ? null : id);
+  state.seasonDrivers.order = (state.seasonDrivers.order || []).map(id => (id === payload.id ? null : id));
   saveState(false);
   renderSeasonDrivers();
 }
@@ -577,18 +614,30 @@ function handleDropConstructorsRankSlot(payload, slotEl){
   if (!pos || pos < 1 || pos > 11) return;
 
   const ranked = state.constructors.order || [];
-  const cleaned = ranked.filter(id => id !== payload.id);
-  cleaned[pos-1] = payload.id;
+  const targetIdx = pos - 1;
+  const draggedId = payload.id;
 
-  state.constructors.order = cleaned;
+  const replacedId = ranked[targetIdx] ?? null;
+  const oldIdx = ranked.findIndex(id => id === draggedId);
+
+  if (oldIdx !== -1) ranked[oldIdx] = null;
+  ranked[targetIdx] = draggedId;
+
+  if (replacedId && replacedId !== draggedId){
+    if (oldIdx !== -1){
+      ranked[oldIdx] = replacedId; // swap
+    }
+  }
+
+  state.constructors.order = ranked;
   saveState(false);
   renderConstructors();
 }
 
 function handleDropToConstructorsPool(payload){
   if (payload.type !== "team") return;
-  const ranked = state.constructors.order || [];
-  state.constructors.order = ranked.map(id => id === payload.id ? null : id);
+
+  state.constructors.order = (state.constructors.order || []).map(id => (id === payload.id ? null : id));
   saveState(false);
   renderConstructors();
 }
